@@ -4,6 +4,7 @@
 #include "filescustomizer.h"
 
 #include <QDialog>
+#include <QColor>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class main_dialog; }
@@ -23,7 +24,8 @@ private slots:
     void on_selDstFolderPB_clicked();
     void on_startProcPB_clicked();
 
-    void log_str_for_user_sig_handler(QString str, LOG_LEVEL lvl = LOG_INFO);
+    void log_str_for_user_sig_handler(QString str, LOG_LEVEL lvl = LOG_INFO
+                                        , QColor spec_color = QColor());
 
 private:
     Ui::main_dialog *ui;

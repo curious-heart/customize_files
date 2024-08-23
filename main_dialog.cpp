@@ -74,28 +74,35 @@ void main_dialog::on_startProcPB_clicked()
     }
 }
 
-void main_dialog::log_str_for_user_sig_handler(QString str, LOG_LEVEL lvl)
+void main_dialog::log_str_for_user_sig_handler(QString str, LOG_LEVEL lvl, QColor spec_color)
 {
     QColor new_color;
 
-    switch(lvl)
+    if(spec_color.isValid())
     {
-    case LOG_DEBUG:
-        new_color = Qt::gray;
-        break;
+        new_color = spec_color;
+    }
+    else
+    {
+        switch(lvl)
+        {
+        case LOG_DEBUG:
+            new_color = Qt::gray;
+            break;
 
-    case LOG_INFO:
-        new_color = ui->logTE->textColor();
-        break;
+        case LOG_INFO:
+            new_color = ui->logTE->textColor();
+            break;
 
-    case LOG_WARN:
-        new_color = Qt::darkYellow;
-        break;
+        case LOG_WARN:
+            new_color = Qt::darkYellow;
+            break;
 
-    case LOG_ERROR:
-    default:
-        new_color = Qt::red;
-        break;
+        case LOG_ERROR:
+        default:
+            new_color = Qt::red;
+            break;
+        }
     }
 
     append_str_with_color_and_weight(ui->logTE, str, new_color);

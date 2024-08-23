@@ -10,8 +10,10 @@
 #include <QColor>
 #include <QFont>
 #include <QtMath>
+#include <QFileInfo>
+#include <QPushButton>
 
-static bool exec_external_process(QString cmd, QString cmd_args, bool as_admin = false)
+bool exec_external_process(QString cmd, QString cmd_args, bool as_admin = false)
 {
     DIY_LOG(LOG_INFO, QString("exec_external_process: %1 %2, as_admin: %3")
                       .arg(cmd, cmd_args).arg((int)as_admin));
@@ -266,4 +268,273 @@ int count_discrete_steps(double low_edge, double up_edge, double step)
     if(tmp < 0) return 0;
 
     return qCeil(tmp) + 1;
+}
+
+int standard_btn_msg_box(QString title, QString info, QMessageBox::StandardButtons btns)
+{
+    QMessageBox msgBox;
+    msgBox.setWindowTitle(title);
+    msgBox.setText(info);
+    msgBox.setStandardButtons(btns);
+    return msgBox.exec();
+}
+
+const char* g_str_src = "源";
+const char* g_str_dst = "目标";
+const char* g_str_folder = "文件夹";
+const char* g_str_file = "文件";
+const char* g_str_not_exists = "不存在";
+const char* g_str_already_exists = "已存在";
+const char* g_str_create = "创建";
+const char* g_str_need = "需要";
+const char* g_str_succeed = "成功";
+const char* g_str_fail = "失败";
+const char* g_str_ask_if_want_to_make_it = "是否需要创建？";
+const char* g_str_user_refuse_to_make = "用户拒绝创建";
+const char* g_str_try_to_make = "尝试创建";
+const char* g_str_try_to_ow = "尝试覆盖";
+const char* g_str_try_to_rm = "尝试删除";
+const char* g_str_user_skip = "用户忽略";
+const char* g_str_operation_abort_by_caller = "操作被调用者中止";
+const char* g_str_operation_abort_by_user = "操作被用户中止";
+const char* g_str_overwrite = "覆盖";
+const char* g_str_remove = "删除";
+const char* g_str_copy = "复制";
+const char* g_str_overwrite_all = "全部覆盖";
+const char* g_str_skip = "忽略";
+const char* g_str_skip_all = "全部忽略";
+const char* g_str_but = "但";
+const char* g_str_current = "当前";
+const char* g_str_to = "至";
+
+/*dst_pth DOES NOT end with "/" */
+bool copy_files(QStringList src_list, QString dst_pth, cp_file_exist_op_e_t f_exist_op,
+                bool mk_dst_folder_if_not_exists, bool stop_on_error,
+                cp_file_result_list_t * result_list, QStringList *result_str_list,
+                bool ask_when_mk_dst_folder)
+{
+    QFileInfo file_info;
+    QString err_str;
+    bool ret = true;
+    cp_file_result_e_t cp_result;
+
+    QDir dst_dir(dst_pth);
+
+    if(!dst_dir.exists())
+    {
+        err_str = QString(g_str_dst) + g_str_folder + " \"" + dst_pth + "\" " + g_str_not_exists
+                + ".";
+        if(!mk_dst_folder_if_not_exists)
+        {
+            ret = false;
+            if(result_list) result_list->append(CP_FILE_ERR_NO_DST_FOLDER);
+            if(result_str_list) result_str_list->append(err_str);
+            return ret;
+        }
+
+        if(ask_when_mk_dst_folder)
+        {
+            QMessageBox::StandardButton sel = (QMessageBox::StandardButton)standard_btn_msg_box(
+                        "???", err_str + "\n\n" + g_str_ask_if_want_to_make_it,
+                        QMessageBox::Yes | QMessageBox::No);
+            if(QMessageBox:: No == sel)
+            {
+                ret = false;
+                if(result_list) result_list->append(CP_FILE_ERR_USER_REFUSE_TO_MK_DST_FOLDER);
+                if(result_str_list) result_str_list->append(err_str + " "
+                                                            + g_str_user_refuse_to_make
+                                                            + g_str_dst + g_str_folder + ".");
+                return ret;
+            }
+        }
+
+        ret = dst_dir.mkpath(dst_pth);
+        if(!ret)
+        {
+            if(result_list) result_list->append(CP_FILE_ERR_MK_DST_FOLDER_FAILS);
+            if(result_str_list) result_str_list->append(err_str + " "
+                                                        + g_str_try_to_make + g_str_dst
+                                                        + g_str_folder + g_str_fail + ".");
+            return ret;
+        }
+    }
+
+    bool user_sel_skip_all = false, user_sel_overwrite_all = false;
+    cp_file_exist_op_e_t this_one_op;
+    for(int idx = 0; idx < src_list.size(); ++idx)
+    {
+        ret = true;
+        file_info = QFileInfo(src_list[idx]);
+        if(!file_info.exists())
+        {
+            ret = false;
+            if(result_list) result_list->append(CP_FILE_ERR_NO_SRC_FILE);
+            if(result_str_list) result_str_list->append(QString(g_str_src) + g_str_file
+                                                        +" \"" + src_list[idx]
+                                                        + "\" " + g_str_not_exists + ".");
+            if(stop_on_error) break;
+            else continue;
+        }
+
+        //copy contents in dir
+        if(file_info.isDir())
+        {
+            QDir src_dir(src_list[idx]);
+            QStringList file_list = src_dir.entryList(QDir::Files),
+                    dir_list = src_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+            if(!file_list.isEmpty())
+            {
+                for(int f_idx = 0; f_idx < file_list.size(); ++f_idx)
+                {
+                    file_list[f_idx].prepend(src_list[idx] + "/");
+                }
+                ret = copy_files(file_list, dst_pth, f_exist_op, mk_dst_folder_if_not_exists,
+                           stop_on_error, result_list, result_str_list, ask_when_mk_dst_folder);
+                if(!ret && stop_on_error) break;
+                else continue;
+            }
+
+            if(!dir_list.isEmpty())
+            {
+                for(int d_idx = 0; d_idx < dir_list.size(); ++d_idx)
+                {
+                    QString new_src_dir_str = src_list[idx] + "/" + dir_list[d_idx],
+                            new_dst_pth = dst_pth + "/" + dir_list[d_idx];
+
+                    ret = copy_files(QStringList(new_src_dir_str), new_dst_pth,
+                             f_exist_op, mk_dst_folder_if_not_exists,
+                             stop_on_error, result_list, result_str_list, ask_when_mk_dst_folder);
+                    if(!ret && stop_on_error) break;
+                    else continue;
+                }
+            }
+
+            if(!ret && stop_on_error) break;
+            else continue;
+        }
+
+        //copy file
+        QString file_name = file_info.fileName();
+        QString dst_file_fpn = dst_pth + "/" + file_name;
+        QFile dst_file(dst_file_fpn);
+        if(dst_file.exists())
+        {
+            this_one_op = f_exist_op;
+            err_str = QString(g_str_dst) + g_str_file +  " \"" + dst_file_fpn + "\" " +
+                        g_str_already_exists + ".";
+            if(CP_FILE_EXIST_OP_ABORT == f_exist_op)
+            {
+                ret = false;
+                if(result_list) result_list->append(CP_FILE_ERR_CALLER_ABORT);
+                if(result_str_list) result_str_list->append(err_str + " "
+                                                           + g_str_operation_abort_by_caller + ".");
+                break;
+            }
+
+            if(!user_sel_skip_all && !user_sel_overwrite_all && CP_FILE_EXIST_OP_ASK == f_exist_op)
+            {
+                QMessageBox op_box;
+                QAbstractButton *user_sel;
+                QPushButton *ow_btn = op_box.addButton(g_str_overwrite, QMessageBox::AcceptRole),
+                        *ow_a_btn = op_box.addButton(g_str_overwrite_all, QMessageBox::AcceptRole),
+                        *skip_btn = op_box.addButton(g_str_skip, QMessageBox::AcceptRole),
+                        *skip_a_btn = op_box.addButton(g_str_skip_all, QMessageBox::AcceptRole);
+                op_box.addButton(QMessageBox::Abort);
+
+                op_box.exec();
+                user_sel = op_box.clickedButton();
+                if(user_sel == ow_btn)
+                {
+                    this_one_op = CP_FILE_EXIST_OP_OVERWRITE;
+                } else if(user_sel == ow_a_btn)
+                {
+                    this_one_op = CP_FILE_EXIST_OP_OVERWRITE;
+                    user_sel_overwrite_all = true;
+                } else if(user_sel == skip_btn)
+                {
+                    this_one_op = CP_FILE_EXIST_OP_SKIP;
+                } else if(user_sel == skip_a_btn)
+                {
+                    this_one_op = CP_FILE_EXIST_OP_SKIP;
+                    user_sel_skip_all = true;
+                } else //abort_btn
+                {
+                    this_one_op = CP_FILE_EXIST_OP_ABORT;
+                }
+            }
+            else
+            {
+                if(user_sel_skip_all) this_one_op = CP_FILE_EXIST_OP_SKIP;
+                else if(user_sel_overwrite_all) this_one_op = CP_FILE_EXIST_OP_OVERWRITE;
+            }
+
+            switch(this_one_op)
+            {
+                case CP_FILE_EXIST_OP_OVERWRITE:
+                    ret = dst_file.remove();
+                    if(!ret)
+                    {
+                        err_str += QString(" ") + g_str_try_to_ow + g_str_but +
+                                g_str_remove + g_str_current + g_str_file + g_str_fail + ".";
+                        cp_result = CP_FILE_ERR_REMOVE_OLD_FILE_FAILS;
+                        break;
+                    }
+                    ret = QFile::copy(src_list[idx], dst_file_fpn);
+                    if(!ret)
+                    {
+                        err_str += QString(" ") + g_str_try_to_ow + ","
+                                + g_str_remove + g_str_current + g_str_file + g_str_succeed
+                                + g_str_but + g_str_copy + g_str_fail + ".";
+                        cp_result = CP_FILE_ERR_UNKNOW_ERR;
+                    }
+                    else
+                    {
+                        err_str += QString(" ") + g_str_overwrite + ".";
+                        cp_result = CP_FILE_OVERWRITTEN;
+                    }
+                    break;
+
+                case CP_FILE_EXIST_OP_SKIP:
+                    err_str += QString(" ") + g_str_user_skip + ".";
+                    cp_result = CP_FILE_SKIPPED;
+                    break;
+
+                case CP_FILE_EXIST_OP_ABORT:
+                default:
+                    ret = false;
+                    err_str += QString(" ") + g_str_operation_abort_by_user + ".";
+                    cp_result = CP_FILE_ERR_USER_ABORT;
+                    break;
+            }
+            if(result_list) result_list->append(cp_result);
+            if(result_str_list) result_str_list->append(err_str);
+            if(!ret && (stop_on_error || (CP_FILE_EXIST_OP_ABORT == this_one_op))) break;
+        }
+        else //dst folder does not contain a file with the same name as src file. so just copy.
+        {
+            err_str = QString(g_str_copy) + g_str_file + " \"" + src_list[idx] + "\" "
+                    + g_str_to + " \"" + dst_pth + "\"";
+            ret = QFile::copy(src_list[idx], dst_file_fpn);
+            if(!ret)
+            {
+                err_str += QString(" ") + g_str_fail + ".";
+                cp_result = CP_FILE_ERR_UNKNOW_ERR;
+            }
+            else
+            {
+                err_str += QString(" ") + g_str_succeed + ".";
+                cp_result = CP_FILE_WRITTEN;
+            }
+            if(result_list) result_list->append(cp_result);
+            if(result_str_list) result_str_list->append(err_str);
+            if(!ret && stop_on_error) break;
+        }
+    }
+    return ret;
+}
+
+void rm_slash_at_ends(QString &str, bool s, bool e)
+{
+    if(s && str.startsWith("/")) str.remove(0, 1);
+    if(e && str.endsWith(("/"))) str.chop(1);
 }
