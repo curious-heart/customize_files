@@ -85,6 +85,13 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QPushButton" name="tttPB">
+       <property name="text">
+        <string>遍历目标文件夹</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>

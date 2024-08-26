@@ -129,4 +129,13 @@ extern const char* g_str_to;
 
 void rm_slash_at_ends(QString &str, bool s = true, bool e = true);
 
+typedef struct
+{
+    QString curr_pth;
+    QStringList dir_str_list, file_str_list;
+}dir_walk_node_s_t;
+typedef QList<dir_walk_node_s_t> dir_walkout_ret_t;
+void walkout_dir(QString root_dir, QStringList file_filter, dir_walkout_ret_t & ret);
+void collect_files(QString root_dir, QStringList file_filter, QStringList& ret);
+
 #endif // COMMON_TOOL_FUNC_H

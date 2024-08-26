@@ -19,6 +19,7 @@ signals:
 private:
     bool overwrite_files(QSettings &cfg, QString ele_sep);
     bool copy_into_folder(QSettings &cfg, QString ele_sep);
+    bool modify_ini(QSettings &cfg, QString ele_sep);
 
 public:
     QString m_cfg_file_fpn, m_src_folder_fpn, m_dst_folder_fpn;

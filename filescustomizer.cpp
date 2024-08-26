@@ -162,6 +162,33 @@ bool FilesCustomizer::copy_into_folder(QSettings &cfg, QString ele_sep)
     return ret;
 }
 
+bool FilesCustomizer::modify_ini(QSettings &cfg, QString ele_sep)
+{
+    bool ret = true;
+    QStringList dir_str_list;
+
+    cfg.beginGroup(gs_cfg_sec_modify_ini);
+
+    dir_str_list = cfg.allKeys();
+
+    for(int f_idx = 0; f_idx < dir_str_list.size(); ++f_idx)
+    {
+        QString src_prefix, dst_prefix;
+        QStringList file_str_list;
+
+        src_prefix = m_src_folder_fpn + "/" + dir_str_list[f_idx];
+        dst_prefix = m_dst_folder_fpn + "/" + dir_str_list[f_idx];
+
+        file_str_list = cfg.value(dir_str_list[f_idx], "").toString().split(ele_sep);
+        QSettings src_ini, dst_ini;
+
+    }
+
+    cfg.endGroup();
+
+    return ret;
+}
+
 void FilesCustomizer::process()
 {
     bool ret;

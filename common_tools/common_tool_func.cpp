@@ -538,3 +538,46 @@ void rm_slash_at_ends(QString &str, bool s, bool e)
     if(s && str.startsWith("/")) str.remove(0, 1);
     if(e && str.endsWith(("/"))) str.chop(1);
 }
+
+void walkout_dir(QString root_dir, QStringList file_filter, dir_walkout_ret_t & ret)
+{
+    QDir curr_dir;
+    dir_walk_node_s_t curr_node;
+
+    curr_node.curr_pth = root_dir;
+    curr_dir.setPath(curr_node.curr_pth);
+    curr_node.dir_str_list = curr_dir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+    curr_node.file_str_list = curr_dir.entryList(file_filter, QDir::Files);
+    ret.append(curr_node);
+
+    int n_idx = 0;
+    while(true)
+    {
+        for(int d_idx = 0; d_idx < ret[n_idx].dir_str_list.size(); ++d_idx)
+        {
+            curr_node.curr_pth = ret[n_idx].curr_pth + "/" + ret[n_idx].dir_str_list[d_idx];
+            curr_dir.setPath(curr_node.curr_pth);
+            curr_node.dir_str_list = curr_dir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+            curr_node.file_str_list = curr_dir.entryList(file_filter, QDir::Files);
+            ret.append(curr_node);
+        }
+
+        ++n_idx;
+        if(n_idx >= ret.size()) break;
+    }
+}
+
+void collect_files(QString root_dir, QStringList file_filter, QStringList& ret)
+{
+    dir_walkout_ret_t walkout_ret;
+
+    walkout_dir(root_dir, file_filter, walkout_ret);
+    for(int n_idx = 0; n_idx < walkout_ret.size(); ++n_idx)
+    {
+        QString prefix = walkout_ret[n_idx].curr_pth;
+        for(int f_idx = 0; f_idx < walkout_ret[n_idx].file_str_list.size(); ++f_idx)
+        {
+            ret.append(prefix + "/" + walkout_ret[n_idx].file_str_list[f_idx]);
+        }
+    }
+}

@@ -147,3 +147,41 @@ void main_dialog::on_clearMsgPB_clicked()
 {
     ui->logTE->clear();
 }
+
+void main_dialog::on_tttPB_clicked()
+{
+    dir_walkout_ret_t walkout_ret;
+
+    if(!m_files_customizer.m_dst_folder_fpn.isEmpty())
+    {
+        walkout_dir(m_files_customizer.m_dst_folder_fpn, QStringList(), walkout_ret);
+        for(int n_idx = 0; n_idx < walkout_ret.size(); ++n_idx)
+        {
+            ui->logTE->append(walkout_ret[n_idx].curr_pth);
+            ui->logTE->append("......................................\n");
+
+            for(int d_idx = 0; d_idx < walkout_ret[n_idx].dir_str_list.size(); ++d_idx)
+            {
+                ui->logTE->append((walkout_ret[n_idx].dir_str_list[d_idx]));
+            }
+            ui->logTE->append("......................................\n");
+
+            for(int f_idx = 0; f_idx < walkout_ret[n_idx].file_str_list.size(); ++f_idx)
+            {
+                ui->logTE->append((walkout_ret[n_idx].file_str_list[f_idx]));
+            }
+
+            ui->logTE->append("======================================\n");
+        }
+
+        ui->logTE->append("======================================");
+        ui->logTE->append("======================================\n");
+        QStringList file_list;
+        collect_files(m_files_customizer.m_dst_folder_fpn, QStringList(), file_list);
+        for(int f_idx = 0; f_idx < file_list.size(); ++ f_idx)
+        {
+            ui->logTE->append(file_list[f_idx]);
+        }
+    }
+}
+

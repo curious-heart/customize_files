@@ -30,6 +30,8 @@ private slots:
 
     void on_clearMsgPB_clicked();
 
+    void on_tttPB_clicked();
+
 private:
     Ui::main_dialog *ui;
     FilesCustomizer m_files_customizer;
