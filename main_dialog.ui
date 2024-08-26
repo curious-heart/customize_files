@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>419</width>
-    <height>244</height>
+    <width>542</width>
+    <height>269</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -59,6 +59,13 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_4">
      <item>
+      <widget class="QPushButton" name="startProcPB">
+       <property name="text">
+        <string>开始处理</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
@@ -72,9 +79,9 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="startProcPB">
+      <widget class="QPushButton" name="clearMsgPB">
        <property name="text">
-        <string>开始处理</string>
+        <string>清空消息</string>
        </property>
       </widget>
      </item>

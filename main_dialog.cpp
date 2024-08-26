@@ -6,6 +6,12 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QColor>
+#include <QSettings>
+
+static const char* gs_str_configs_file_pn = "configs/configs.ini";
+static const char* gs_str_config_sec_def_locs = "def_locs";
+static const char* gs_str_config_key_def_cfg_file = "def_cfg_file";
+static const char* gs_str_config_key_def_src_loc = "def_src_loc";
 
 main_dialog::main_dialog(QWidget *parent)
     : QDialog(parent)
@@ -15,11 +21,40 @@ main_dialog::main_dialog(QWidget *parent)
 
     connect(&m_files_customizer, &FilesCustomizer::log_str_for_user_sig,
             this, &main_dialog::log_str_for_user_sig_handler);
+
+    read_configs();
 }
 
 main_dialog::~main_dialog()
 {
     delete ui;
+}
+
+void main_dialog::read_configs()
+{
+    QString def_str;
+    QFileInfo f_info;
+    QSettings configs(gs_str_configs_file_pn, QSettings::IniFormat);
+
+    configs.beginGroup(gs_str_config_sec_def_locs);
+
+    def_str = configs.value(gs_str_config_key_def_cfg_file, QString("")).toString();
+    f_info.setFile(def_str);
+    if(f_info.exists() && f_info.isFile())
+    {
+        m_files_customizer.m_cfg_file_fpn = def_str;
+        ui->selCfgFileLE->setText(m_files_customizer.m_cfg_file_fpn);
+    }
+
+    def_str = configs.value(gs_str_config_key_def_src_loc, QString("")).toString();
+    f_info.setFile(def_str);
+    if(f_info.exists() && f_info.isDir())
+    {
+        m_files_customizer.m_src_folder_fpn = def_str;
+        ui->selSrcFolderLE->setText(m_files_customizer.m_src_folder_fpn);
+    }
+
+    configs.endGroup();
 }
 
 void main_dialog::on_selCfgFilePB_clicked()
@@ -62,15 +97,15 @@ void main_dialog::on_selDstFolderPB_clicked()
 
 void main_dialog::on_startProcPB_clicked()
 {
-    if(!m_files_customizer.m_cfg_file_fpn.isEmpty()
-            && !m_files_customizer.m_src_folder_fpn.isEmpty()
-            && !m_files_customizer.m_dst_folder_fpn.isEmpty())
+    if(QFileInfo(m_files_customizer.m_cfg_file_fpn).isFile()
+        && QFileInfo(m_files_customizer.m_src_folder_fpn).isDir()
+        && QFileInfo(m_files_customizer.m_dst_folder_fpn).isDir())
     {
         m_files_customizer.process();
     }
     else
     {
-        QMessageBox::information(this, "", tr("请首先选择配置文件，并指定源文件夹和目的文件夹"));
+        QMessageBox::information(this, "", tr("请检查配置文件、源文件夹、目标文件夹是否存在！"));
     }
 }
 
@@ -106,4 +141,9 @@ void main_dialog::log_str_for_user_sig_handler(QString str, LOG_LEVEL lvl, QColo
     }
 
     append_str_with_color_and_weight(ui->logTE, str, new_color);
+}
+
+void main_dialog::on_clearMsgPB_clicked()
+{
+    ui->logTE->clear();
 }
