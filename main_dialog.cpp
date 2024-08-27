@@ -141,6 +141,7 @@ void main_dialog::log_str_for_user_sig_handler(QString str, LOG_LEVEL lvl, QColo
     }
 
     append_str_with_color_and_weight(ui->logTE, str, new_color);
+    DIY_LOG(lvl, str);
 }
 
 void main_dialog::on_clearMsgPB_clicked()
@@ -154,6 +155,7 @@ void main_dialog::on_tttPB_clicked()
 
     if(!m_files_customizer.m_dst_folder_fpn.isEmpty())
     {
+        /*
         walkout_dir(m_files_customizer.m_dst_folder_fpn, QStringList(), walkout_ret);
         for(int n_idx = 0; n_idx < walkout_ret.size(); ++n_idx)
         {
@@ -176,6 +178,7 @@ void main_dialog::on_tttPB_clicked()
 
         ui->logTE->append("======================================");
         ui->logTE->append("======================================\n");
+        */
         QStringList file_list;
         collect_files(m_files_customizer.m_dst_folder_fpn, QStringList(), file_list);
         for(int f_idx = 0; f_idx < file_list.size(); ++ f_idx)

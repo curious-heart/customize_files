@@ -126,6 +126,8 @@ extern const char* g_str_skip_all;
 extern const char* g_str_but;
 extern const char* g_str_current;
 extern const char* g_str_to;
+extern const char* g_str_update;
+extern const char* g_str_operation;
 
 void rm_slash_at_ends(QString &str, bool s = true, bool e = true);
 
