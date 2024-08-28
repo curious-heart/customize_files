@@ -26,11 +26,11 @@ set exe_file_base_name=customize_files
 set exe_folder=..\build-customize_files-Desktop_Qt_5_15_2_MSVC2019_64bit-Release\release
 if "%cust_files_folder%" == "" (
     echo no cust files!
-    echo
+    echo.
     set exe_dest_folder=%dest_folder%
 ) else (
     echo there are cust files!
-    echo
+    echo.
     set exe_dest_folder=%dest_folder%\%exe_file_base_name%
     xcopy %cust_files_folder%\* %dest_folder%\%cust_files_folder% /Y /I /E
 )
