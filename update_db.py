@@ -3,7 +3,7 @@ import os
 import getpass
 import pyodbc
 
-usage_str = "usage: " + os.path.basename(__file__) + "src_mdb_file_name dst_mdb_folder [-r]"
+usage_str = "usage: " + os.path.basename(__file__) + " src_mdb_file_name dst_mdb_folder [-r]"
 if(len(sys.argv) != 3 and len(sys.argv) != 4):
     print(usage_str)
     sys.exit(-1)
@@ -80,6 +80,7 @@ for pth, _, fn_list in dst_mdb_walkout:
             dst_new_data_rows = dst_crsr.fetchall()
             rec_data_rows(dst_dbq_v, dst_new_data_rows)
         dst_crsr.close()
+        dst_cnxn.close()
 
 
 """
