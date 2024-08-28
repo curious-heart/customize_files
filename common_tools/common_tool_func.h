@@ -128,6 +128,7 @@ extern const char* g_str_current;
 extern const char* g_str_to;
 extern const char* g_str_update;
 extern const char* g_str_operation;
+extern const char* g_str_is_empty;
 
 void rm_slash_at_ends(QString &str, bool s = true, bool e = true);
 

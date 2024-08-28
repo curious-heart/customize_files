@@ -308,6 +308,7 @@ const char* g_str_current = "当前";
 const char* g_str_to = "至";
 const char* g_str_update = "更新";
 const char* g_str_operation = "操作";
+const char* g_str_is_empty = "为空";
 
 /*dst_pth DOES NOT end with "/" */
 bool copy_files(QStringList src_list, QString dst_pth, cp_file_exist_op_e_t f_exist_op,

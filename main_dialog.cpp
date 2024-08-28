@@ -151,11 +151,10 @@ void main_dialog::on_clearMsgPB_clicked()
 
 void main_dialog::on_tttPB_clicked()
 {
-    dir_walkout_ret_t walkout_ret;
-
     if(!m_files_customizer.m_dst_folder_fpn.isEmpty())
     {
         /*
+        dir_walkout_ret_t walkout_ret;
         walkout_dir(m_files_customizer.m_dst_folder_fpn, QStringList(), walkout_ret);
         for(int n_idx = 0; n_idx < walkout_ret.size(); ++n_idx)
         {
@@ -185,6 +184,10 @@ void main_dialog::on_tttPB_clicked()
         {
             ui->logTE->append(file_list[f_idx]);
         }
+    }
+    else
+    {
+        log_str_for_user_sig_handler(QString(g_str_dst) + g_str_folder + g_str_is_empty, LOG_ERROR);
     }
 }
 

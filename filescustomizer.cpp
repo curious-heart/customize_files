@@ -22,6 +22,7 @@ static const char* gs_cfg_sec_modify_ini = "modify_ini";
 bool FilesCustomizer::overwrite_files(QSettings &cfg, QString ele_sep)
 {
     bool ret = true;
+    bool worked = false;
 
     cfg.beginGroup(gs_cfg_sec_overwrite);
 
@@ -34,7 +35,7 @@ bool FilesCustomizer::overwrite_files(QSettings &cfg, QString ele_sep)
     for(int idx = 0; idx < src_folder_list.size(); ++idx)
     {
         QString relative_dir = src_folder_list[idx],
-                file_names_list_str = cfg.value(relative_dir).toString();
+                file_names_list_str = cfg.value(relative_dir, "").toString();
         QStringList file_names_list = file_names_list_str.split(ele_sep, Qt::SkipEmptyParts);
 
         rm_slash_at_ends(relative_dir);
@@ -62,12 +63,13 @@ bool FilesCustomizer::overwrite_files(QSettings &cfg, QString ele_sep)
         }
 
         QString dst_folder_fpn = m_dst_folder_fpn + "/" + relative_dir;
+        cp_ret_list.clear(); cp_ret_str_list.clear();
         ret = copy_files(file_names_list, dst_folder_fpn, CP_FILE_EXIST_OP_OVERWRITE,
                          true, true, &cp_ret_list, &cp_ret_str_list);
 
         for(int r_idx = 0; r_idx < qMin(cp_ret_list.size(), cp_ret_str_list.size()); ++r_idx)
         {
-            log_lvl = (cp_ret_list[idx] <= CP_FILE_OK_FLAG) ? LOG_INFO : LOG_ERROR;
+            log_lvl = (cp_ret_list[r_idx] <= CP_FILE_OK_FLAG) ? LOG_INFO : LOG_ERROR;
             emit log_str_for_user_sig(cp_ret_str_list[r_idx], log_lvl);
         }
 
@@ -75,6 +77,23 @@ bool FilesCustomizer::overwrite_files(QSettings &cfg, QString ele_sep)
         {
             break;
         }
+        if(cp_ret_list.size() > 0) worked = true;
+    }
+
+    if(ret)
+    {
+        if(worked)
+        {
+            emit log_str_for_user_sig(QString(gs_cfg_sec_overwrite) + g_str_succeed + "\n", LOG_INFO, Qt::green);
+        }
+        else
+        {
+            emit log_str_for_user_sig(QString(gs_cfg_sec_overwrite) + g_str_is_empty + "\n", LOG_INFO);
+        }
+    }
+    else
+    {
+        emit log_str_for_user_sig(QString(gs_cfg_sec_overwrite) + g_str_fail + "\n", LOG_ERROR);
     }
 
     cfg.endGroup();
@@ -85,6 +104,7 @@ bool FilesCustomizer::overwrite_files(QSettings &cfg, QString ele_sep)
 bool FilesCustomizer::copy_into_folder(QSettings &cfg, QString ele_sep)
 {
     bool ret = true;
+    bool worked = false;
 
     cfg.beginGroup(gs_cfg_sec_copyinto);
 
@@ -99,16 +119,25 @@ bool FilesCustomizer::copy_into_folder(QSettings &cfg, QString ele_sep)
         bool go_on = true;
 
         QStringList src_fs = src_list[idx].split(ele_sep, Qt::SkipEmptyParts);
-        QString dst_pth = cfg.value(src_list[idx]).toString();
+        QString dst_pths_str = cfg.value(src_list[idx], "").toString();
+        QStringList dst_pths = dst_pths_str.split(ele_sep, Qt::SkipEmptyParts);
         QString src_folder;
 
-        rm_slash_at_ends(dst_pth);
+        for(int dp_idx = 0; dp_idx < dst_pths.size(); ++dp_idx)
+        {
+            rm_slash_at_ends(dst_pths[dp_idx]);
+            if(dst_pths[dp_idx].isEmpty())
+            {
+                go_on = false;
+                break;
+            }
+        }
 
-        if(src_fs.size() < 1 || dst_pth.isEmpty())
+        if(!go_on || src_fs.size() < 1)
         {
             go_on = false;
         }
-        else// if(src_fs.size() >= 1)
+        else
         {
             src_folder = src_fs[0];
             rm_slash_at_ends(src_folder);
@@ -118,7 +147,7 @@ bool FilesCustomizer::copy_into_folder(QSettings &cfg, QString ele_sep)
         if(!go_on)
         {
             log_str = QString("[") + gs_cfg_sec_copyinto + "]"
-                                + src_list[idx] + "=" + dst_pth + " : " + "invalid.";
+                                + src_list[idx] + "=" + dst_pths_str + " : " + "invalid.";
             emit log_str_for_user_sig(log_str, LOG_ERROR);
             ret = false;
             break;
@@ -138,23 +167,42 @@ bool FilesCustomizer::copy_into_folder(QSettings &cfg, QString ele_sep)
             }
         }
 
-
-        ret = copy_files(to_copy_list, m_dst_folder_fpn + "/" + dst_pth,
-                     CP_FILE_EXIST_OP_OVERWRITE, true, true, &cp_ret_list, &cp_ret_str_list, false);
-
-        for(int r_idx = 0; r_idx < qMin(cp_ret_list.size(), cp_ret_str_list.size()); ++r_idx)
+        for(int dp_idx = 0; dp_idx < dst_pths.size(); ++dp_idx)
         {
-            log_lvl = (cp_ret_list[idx] <= CP_FILE_OK_FLAG) ? LOG_INFO : LOG_ERROR;
-            emit log_str_for_user_sig(cp_ret_str_list[r_idx], log_lvl);
+            cp_ret_list.clear(); cp_ret_str_list.clear();
+            ret = copy_files(to_copy_list, m_dst_folder_fpn + "/" + dst_pths[dp_idx],
+                         CP_FILE_EXIST_OP_OVERWRITE, true, true, &cp_ret_list, &cp_ret_str_list, false);
+
+            for(int r_idx = 0; r_idx < qMin(cp_ret_list.size(), cp_ret_str_list.size()); ++r_idx)
+            {
+                log_lvl = (cp_ret_list[r_idx] <= CP_FILE_OK_FLAG) ? LOG_INFO : LOG_ERROR;
+                emit log_str_for_user_sig(cp_ret_str_list[r_idx], log_lvl);
+            }
+            if(!ret) break;
         }
 
-        if(!ret)
-        {
-            break;
-        }
+        if(!ret) break;
+
+        if(cp_ret_list.size() > 0) worked = true;
     }
 
     cfg.endGroup();
+
+    if(ret)
+    {
+        if(worked)
+        {
+            emit log_str_for_user_sig(QString(gs_cfg_sec_copyinto) + g_str_succeed + "\n", LOG_INFO, Qt::green);
+        }
+        else
+        {
+            emit log_str_for_user_sig(QString(gs_cfg_sec_copyinto) + g_str_is_empty + "\n", LOG_INFO);
+        }
+    }
+    else
+    {
+        emit log_str_for_user_sig(QString(gs_cfg_sec_copyinto) + g_str_fail + "\n", LOG_ERROR);
+    }
 
     return ret;
 }
@@ -163,6 +211,7 @@ bool FilesCustomizer::modify_ini(QSettings &cfg, QString ele_sep)
 {
     static const char* ls_ini_fn_filter_str = "*.ini";
     bool ret = true;
+    bool worked = false;
     QStringList dir_str_list;
 
     cfg.beginGroup(gs_cfg_sec_modify_ini);
@@ -265,10 +314,27 @@ bool FilesCustomizer::modify_ini(QSettings &cfg, QString ele_sep)
         }
 
         if(!ret) break;
+
+        if(src_ini_fpn_list.size() > 0) worked = true;
     }
 
     cfg.endGroup();
 
+    if(ret)
+    {
+        if(worked)
+        {
+            emit log_str_for_user_sig(QString(gs_cfg_sec_modify_ini) + g_str_succeed + "\n", LOG_INFO, Qt::green);
+        }
+        else
+        {
+            emit log_str_for_user_sig(QString(gs_cfg_sec_modify_ini) + g_str_is_empty + "\n", LOG_INFO);
+        }
+    }
+    else
+    {
+        emit log_str_for_user_sig(QString(gs_cfg_sec_modify_ini) + g_str_fail + "\n", LOG_ERROR);
+    }
     return ret;
 }
 
@@ -290,34 +356,11 @@ void FilesCustomizer::process()
     ret = overwrite_files(cfg, ele_sep);
     if(ret)
     {
-        emit log_str_for_user_sig(QString(gs_cfg_sec_overwrite) + g_str_succeed, LOG_INFO,
-                                  Qt::green);
         ret = copy_into_folder(cfg, ele_sep);
-
         if(ret)
         {
-            emit log_str_for_user_sig(QString(gs_cfg_sec_copyinto) + g_str_succeed, LOG_INFO,
-                                      Qt::green);
-
             ret = modify_ini(cfg, ele_sep);
-            if(ret)
-            {
-                emit log_str_for_user_sig(QString(gs_cfg_sec_modify_ini) + g_str_succeed, LOG_INFO,
-                                      Qt::green);
-            }
-            else
-            {
-                emit log_str_for_user_sig(QString(gs_cfg_sec_modify_ini) + g_str_fail, LOG_ERROR);
-            }
         }
-        else
-        {
-            emit log_str_for_user_sig(QString(gs_cfg_sec_copyinto) + g_str_fail, LOG_ERROR);
-        }
-    }
-    else
-    {
-        emit log_str_for_user_sig(QString(gs_cfg_sec_overwrite) + g_str_fail, LOG_ERROR);
     }
 
     if(ret)
