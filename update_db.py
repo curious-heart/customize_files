@@ -82,6 +82,8 @@ for pth, _, fn_list in dst_mdb_walkout:
         dst_crsr.close()
         dst_cnxn.close()
 
+src_crsr.close()
+src_cnxn.close()
 
 """
 for table_info in src_crsr.tables(tableType='TABLE'):
